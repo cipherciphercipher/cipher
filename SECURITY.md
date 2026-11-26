@@ -205,7 +205,8 @@ Anything in a channel you're viewing is read automatically, so Cipher keeps that
 - age messages with more than 32 recipient stanzas, and PGP messages with more than 32
   session-key packets, are refused before any key is tried.
 - PGP messages with any passphrase packet are refused before GnuPG decrypts them (see below).
-- Disappearing messages are only downloaded automatically from *your* Cipher server. A link to
+- With your own Cipher server set, it is the only server Cipher ever contacts: disappearing
+  messages stored anywhere else are not loaded at all. Without one, a link to
   any other server needs a click, because loading it tells that server your IP address, and
   is refused outright if it points at an IP address, localhost or a local-network name, so a
   message can't make Cipher send requests to your router or other devices.

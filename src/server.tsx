@@ -348,9 +348,12 @@ export async function uploadMessage(armored: string, ttlDays: LinkTtl): Promise<
 /** Downloads a message and checks it's exactly the ciphertext the sender linked to. */
 export async function fetchMessage(origin: string, id: string, hash: string): Promise<{ armored: string; } | { gone: true; }> {
     if (!LINK_ID_RE.test(id)) throw new CipherError("malformed");
-    // Your own server can be anywhere; anyone else's must be a public host name.
-    if (origin !== serverOrigin() && !isPublicHostname(new URL(origin).hostname))
-        throw new CipherError("internal", "Cipher doesn't load messages from local network or IP addresses unless it's your own server.");
+    // With your own server set, it's the only server Cipher ever contacts.
+    const own = serverOrigin();
+    if (own && origin !== own) throw new CipherError("internal", "This message is on a different Cipher server. Cipher only contacts your own server.");
+    // Without one, another server is only contacted after a click, and only at a public host name.
+    if (!own && !isPublicHostname(new URL(origin).hostname))
+        throw new CipherError("internal", "Cipher doesn't load messages from local network or IP addresses.");
     const r = await native().serverFetch(origin, "GET", `/m/${id}`, undefined, undefined, undefined);
     if (!r.ok) throw new CipherError("internal", "Couldn't reach the server holding this message.");
     if (r.status === 404) return { gone: true };

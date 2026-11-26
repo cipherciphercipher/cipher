@@ -28,6 +28,8 @@ All notable changes to Cipher are listed here. The format follows
 - Importing a secret key needs a native confirmation and a plain key file; other people's
   disappearing-message links to IP addresses or local-network names are refused; plain-http
   servers need `CIPHER_DEV_HTTP=1`.
+- With your own Cipher server set, Cipher never contacts any other server: disappearing
+  messages stored elsewhere are shown as a note, not loaded.
 - Server responses carry stricter headers (sandboxed CSP, no framing, same-origin only).
 - Cipher server: Discord sign-in tokens are revoked as soon as the user ID is read, sign-in
   attempts are capped per IP, malformed age keys get a clean refusal, RSA keys with a weak

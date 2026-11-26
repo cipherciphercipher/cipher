@@ -187,9 +187,11 @@ function LinkMessage({ message, parsed }: { message: Message; parsed: Extract<Pa
 }
 
 function LinkCopy({ message, link, expiresAt, siblings }: { message: Message; link: MessageLink; expiresAt: number; siblings: KeyType[]; }) {
-    // Only your own server is contacted without asking: loading a link
-    // tells its server your IP address and when you read the message.
-    const auto = serverOrigin() === link.origin;
+    // With your own server set, it's the only one Cipher ever contacts. Without
+    // one, another server is only contacted after a click: loading a link tells
+    // its server your IP address and when you read the message.
+    const own = serverOrigin();
+    const auto = own === link.origin;
     const [allowed, setAllowed] = useState(auto);
     const [result, setResult] = useState<{ armored: string; } | { gone: true; } | { error: string; }>();
 
@@ -202,6 +204,13 @@ function LinkCopy({ message, link, expiresAt, siblings }: { message: Message; li
     }, [allowed, link.id]);
 
     const host = new URL(link.origin).host;
+    if (own && !auto) {
+        return (
+            <Shell tone="muted">
+                Disappearing message stored on {host}, a different Cipher server. Cipher only contacts your own server, so it wasn't loaded. Ask the sender to send it again without the disappearing option, or through your server.
+            </Shell>
+        );
+    }
     if (!allowed) {
         return (
             <Shell tone="muted">
