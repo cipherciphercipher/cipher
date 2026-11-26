@@ -51,7 +51,8 @@ jobs:
       - name: Release notes from CHANGELOG.md
         run: |
           version="${GITHUB_REF_NAME#v}"
-          awk -v v="$version" '$0 ~ "^## \[" v "\]" {on=1; next} on && /^## \[/ {exit} on' CHANGELOG.md > notes.md
+          # Plain-text match: "[" would start a character class in a regex.
+          awk -v h="## [$version]" 'index($0, h) == 1 {on=1; next} on && /^(## |\[[^]]+\]: )/ {exit} on' CHANGELOG.md > notes.md
           test -s notes.md || echo "See CHANGELOG.md." > notes.md
       - name: Publish
         env:

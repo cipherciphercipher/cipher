@@ -6,6 +6,12 @@ All notable changes to Cipher are listed here. The format follows
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-26
+
+First public release. Not independently audited; see `AUDIT.md` for the authors' line-by-line
+review of the bundled code and `SECURITY.md` for the threat model. On Windows, install with
+`Cipher-Setup.exe` (attached below, with its SHA-256 and a build provenance record).
+
 ### Changed
 
 - Decrypted messages now appear in place of the encrypted text, in a green box with a lock,
@@ -91,12 +97,7 @@ All notable changes to Cipher are listed here. The format follows
 - Make a recipient group from a Discord group DM, and add everyone in the current DM or
   group DM to the readers in one click.
 
-## [0.1.0] - 2026-11-25
-
-First release. Not independently audited; see `AUDIT.md` for the authors' line-by-line
-review of the bundled code.
-
-### Added
+### Core features
 
 - age (X25519) keys stored by Cipher, and PGP through your installed GnuPG (Gpg4win on
   Windows): use a key from your keyring or create a Curve25519 one. Both at once if you
