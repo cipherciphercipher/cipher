@@ -505,9 +505,23 @@ namespace CipherSetup
 
     static class Program
     {
+        // Installers usually run from Downloads, where someone could plant a DLL with a
+        // system DLL's name. From here on, Windows only loads DLLs from System32.
+        [System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError = true)]
+        static extern bool SetDefaultDllDirectories(uint flags);
+        [System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError = true, CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+        static extern bool SetDllDirectory(string path);
+        const uint LOAD_LIBRARY_SEARCH_SYSTEM32 = 0x00000800;
+
         [STAThread]
         static int Main(string[] args)
         {
+            try
+            {
+                SetDllDirectory("");
+                SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_SYSTEM32);
+            }
+            catch (EntryPointNotFoundException) { /* very old Windows: nothing to restrict with */ }
             if (args.Length > 0) return Cli.Run(args);
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
