@@ -592,6 +592,21 @@ describe("server: disappearing messages", () => {
         expect((await req("GET", "/v1/health")).status).toBe(200);
     });
 
+    it("the hourly job still deletes expired messages when another of its steps fails", async () => {
+        (env as { MESSAGES?: unknown; }).MESSAGES = undefined;
+        const token = await signIn();
+        expect((await req("POST", "/v1/messages", { token, body: { ciphertext: ageMsg, ttlDays: 1 } })).status).toBe(201);
+        clock += 86_400_000;
+        // Break one step: the usage cleanup.
+        const real = env.DB.prepare.bind(env.DB);
+        env.DB.prepare = (sql: string) => {
+            if (sql.startsWith("DELETE FROM usage")) throw new Error("boom");
+            return real(sql);
+        };
+        await expect(cleanup(env, clock)).rejects.toThrow("boom");
+        expect(env.DB.db.prepare("SELECT count(*) AS n FROM messages").get()).toEqual(expect.objectContaining({ n: 0 }));
+    });
+
     it("refuses plain http instead of redirecting (except localhost, for development)", async () => {
         const plain = await handle(new Request("http://cipher.example/v1/health"), env, deps);
         expect(plain.status).toBe(403);

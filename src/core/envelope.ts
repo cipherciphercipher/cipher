@@ -316,8 +316,21 @@ export function parseContent(content: string | undefined | null): ParsedContent 
  */
 export function isPureCipherContent(content: string | undefined | null, parsed = parseContent(content)): boolean {
     if (!parsed || !content) return false;
-    if (parsed.kind === "part" || parsed.kind === "file-notice" || parsed.kind === "attachment" || parsed.kind === "link") return true;
-    return parsed.kind === "raw" && content.replace(/\r\n/g, "\n").trim() === parsed.armored.trim();
+    const text = content.replace(/\r\n/g, "\n").trim();
+    // The link parser already accepts nothing but the exact block.
+    if (parsed.kind === "link") return true;
+    if (parsed.kind === "raw") return text === parsed.armored.trim();
+    if (parsed.kind === "key") return false;
+    // Parts and notices are read leniently (extra header words and text after
+    // the block are ignored), so check here that the message is exactly what
+    // Cipher writes. Otherwise someone could append text that Cipher users
+    // never see while everyone else does.
+    const nl = text.indexOf("\n");
+    const header = nl === -1 ? text : text.slice(0, nl);
+    if (parsed.kind === "file-notice") return text === fileNotice(parsed.ref, parsed.set);
+    if (parsed.kind === "attachment") return text === attachmentHeader(parsed.ref, parsed.set);
+    const expected = headerLine(MSG_PREFIX, [parsed.type, `${parsed.part}/${parsed.total}`, parsed.ref && `ref ${parsed.ref}`, parsed.set && `set ${parsed.set}`]);
+    return header === expected && text.slice(nl + 1) === fenced(parsed.body);
 }
 
 export interface PartRef {

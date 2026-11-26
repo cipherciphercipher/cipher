@@ -17,7 +17,7 @@ import { CipherError, errorCode, safeMessage } from "./core/errors";
 import { inspectKey, KEY_PROBLEM_TEXT, type KeyProblem, type KeyType } from "./core/keys";
 import { type CiphertextPlan, describePlanError, planEncryption } from "./core/recipients";
 import type { LinkTtl } from "./core/serverApi";
-import { serverOrigin, uploadMessage } from "./server";
+import { deleteLink, serverOrigin, uploadMessage } from "./server";
 import { settings } from "./settings";
 import { loadCandidates, selfId, state, userName } from "./state";
 import { confirmDanger, explain } from "./ui/common";
@@ -127,8 +127,14 @@ async function sendAsLink(message: { content: string; }, ciphertexts: Ciphertext
     try {
         if (!serverOrigin()) throw new CipherError("internal", "No Cipher server is set up.");
         const cts = await buildLinkCiphertexts({ ciphertexts, text: message.content, signFingerprint });
-        const ups: { url: string; type: KeyType; hash: string; expiresAt: number; }[] = [];
-        for (const c of cts) ups.push({ ...await uploadMessage(c.armored, days), type: c.type });
+        const ups: { url: string; id: string; type: KeyType; hash: string; expiresAt: number; }[] = [];
+        try {
+            for (const c of cts) ups.push({ ...await uploadMessage(c.armored, days), type: c.type });
+        } catch (e) {
+            // One copy failed: take back the copies already uploaded, so nothing is left behind.
+            await Promise.all(ups.map(u => deleteLink(u.id).catch(() => { })));
+            throw e;
+        }
         message.content = formatLinkMessage(Math.min(...ups.map(u => u.expiresAt)), ups);
         return true;
     } catch (e) {

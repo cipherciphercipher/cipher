@@ -153,7 +153,7 @@ function Picker({ modal, channel }: { modal: RenderModalProps; channel: Channel;
                                 <Button key={d} size="min" variant={linkDays === d ? "primary" : "secondary"} onClick={() => setLinkDays(d)}>Disappears after {d} day{d > 1 ? "s" : ""}</Button>
                             ))}
                         </div>
-                        {linkDays && <div className={cl("hint")}>The encrypted text goes to {new URL(server).host} and is deleted there after {linkDays} day{linkDays > 1 ? "s" : ""}. Discord only gets a link. Readers need Cipher set to the same server to read it automatically.</div>}
+                        {linkDays && <div className={cl("hint")}>The encrypted text goes to {new URL(server).host} and is deleted there after {linkDays} day{linkDays > 1 ? "s" : ""}. Discord only gets a short encoded reference. Readers need Cipher set to this same server to read it.</div>}
                         {linkDays && signedIn === false && <Notice tone="warn">Sign in to the Cipher server first (Keys &amp; contacts → Cipher server).</Notice>}
                     </div>
                 )}

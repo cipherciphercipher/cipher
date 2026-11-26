@@ -304,11 +304,11 @@ export async function unpublishKey(type: KeyType, opts: { reset?: boolean; } = {
  * Changes to your published keys that this computer didn't ask for: someone
  * with access to your Discord account may be trying to replace your key.
  */
-export async function unexpectedKeyChanges(): Promise<DirectoryKey[]> {
+export async function unexpectedKeyChanges(opts: { fresh?: boolean; } = { fresh: true }): Promise<DirectoryKey[]> {
     const s = await getSession();
     if (!s) return [];
     const mine = await DataStore.get<Record<string, number>>(resetsKey()) ?? {};
-    const keys = await lookupKeys(s.userId, { fresh: true });
+    const keys = await lookupKeys(s.userId, opts);
     return keys.filter(k => k.pending && mine[k.type] !== k.pending.effectiveAt);
 }
 

@@ -6,6 +6,21 @@ All notable changes to Cipher are listed here. The format follows
 
 ## [Unreleased]
 
+### Security
+
+- A message is only replaced by its decrypted text when it is exactly what Cipher writes.
+  Before, text added after an encrypted block (or extra words in its header line) was hidden
+  from Cipher users while everyone else saw it.
+
+### Fixed
+
+- Cipher-Setup.exe records which Vencord files it replaced and restores exactly those on
+  uninstall, instead of the newest backup folder, and writes the new files before moving the
+  old ones away.
+- A disappearing message whose upload fails part-way no longer leaves copies on the server.
+- Auto-lock no longer mistakes delayed background timers for the computer having slept.
+- Server: the hourly job keeps deleting expired messages even if another of its steps fails.
+
 ## [0.1.0] - 2026-11-26
 
 First public release. Not independently audited; see `AUDIT.md` for the authors' line-by-line

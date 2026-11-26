@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from "vitest";
 
 import { buildOutgoing, decryptArmored } from "../src/core/compose";
-import { DISCORD_CHAR_LIMIT, fileNotice, formatKeyShare, isPureCipherContent, parseAttachmentName, parseContent, reassemble, splitArmored } from "../src/core/envelope";
+import { attachmentHeader, DISCORD_CHAR_LIMIT, fileNotice, formatKeyShare, isPureCipherContent, parseAttachmentName, parseContent, reassemble, splitArmored } from "../src/core/envelope";
 import { planEncryption } from "../src/core/recipients";
 import { ageUser, lookupOf, newGpgHome, pgpUser, randomText, type TestUser } from "./helpers";
 
@@ -121,6 +121,32 @@ describe("which messages get their text replaced by the decrypted text", () => {
         expect(isPureCipherContent("hello")).toBe(false);
         expect(isPureCipherContent("")).toBe(false);
         expect(isPureCipherContent(undefined)).toBe(false);
+    });
+    it("never hides text smuggled around a Cipher message (it would be visible only to people without Cipher)", () => {
+        const parts = splitArmored("-----BEGIN PGP MESSAGE-----\n\n" + "A".repeat(64) + "\n-----END PGP MESSAGE-----", { type: "pgp", ref: "abcd1234", set: "wxyz9876" });
+        const [part] = parts;
+        // Controls: what Cipher writes is hidden, in every shape it writes.
+        expect(isPureCipherContent(part)).toBe(true);
+        expect(isPureCipherContent(part.replace(/\n/g, "\r\n") + "\n")).toBe(true);
+        const [lone] = splitArmored(armor, { type: "pgp", ref: "abcd1234" });
+        expect(lone.split("\n")[0]).not.toContain("ref");
+        expect(isPureCipherContent(lone)).toBe(true);
+        // Older builds wrote a ref on lone messages too.
+        expect(isPureCipherContent(lone.replace("1/1", "1/1 · ref abcd1234"))).toBe(true);
+        expect(isPureCipherContent(attachmentHeader("abcd1234", "wxyz9876"))).toBe(true);
+        // Still parsed (so still decrypted), but shown as it is, not hidden.
+        for (const sneaky of [
+            part + "\nfree nitro at evil.example",
+            part.replace("\n```", " · free nitro at evil.example\n```"),
+            part.replace("\n```\n", "\nfree nitro\n```\n"),
+            part + "\n```\nmore\n```",
+            fileNotice("abcd1234") + "\nfree nitro",
+            fileNotice("abcd1234").replace("encrypted message attached above", "free nitro"),
+            attachmentHeader("abcd1234") + " · free nitro"
+        ]) {
+            expect(parseContent(sneaky), sneaky).not.toBeNull();
+            expect(isPureCipherContent(sneaky), sneaky).toBe(false);
+        }
     });
 });
 

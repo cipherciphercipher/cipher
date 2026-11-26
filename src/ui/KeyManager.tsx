@@ -333,8 +333,13 @@ function ServerCard() {
         getSession().then(s => {
             setSession(s ?? null);
             if (!s) return;
-            lookupKeys(s.userId, { fresh: true }).then(setPublished, () => setPublished([]));
-            unexpectedKeyChanges().then(list => setUnexpected(new Set(list.map(k => k.type))), () => { });
+            lookupKeys(s.userId, { fresh: true })
+                .then(keys => {
+                    setPublished(keys);
+                    // Uses the lookup just made instead of asking the server again.
+                    return unexpectedKeyChanges({ fresh: false }).then(list => setUnexpected(new Set(list.map(k => k.type))));
+                })
+                .catch(() => setPublished(p => p ?? []));
         }, () => setSession(null));
     };
     useEffect(refresh, [origin]);

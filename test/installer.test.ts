@@ -153,3 +153,49 @@ run("Cipher-Setup.exe (fake Discord folders only)", () => {
         expect(exec("--list").stdout).toContain("Discord\tClean");
     });
 });
+
+run("Cipher-Setup.exe: which backup uninstall restores", () => {
+    const roots: string[] = [];
+    afterAll(() => roots.forEach(r => rmSync(r, { recursive: true, force: true })));
+
+    function world(withVencord: boolean) {
+        const root = mkdtempSync(join(tmpdir(), "cipher-exe-test-"));
+        roots.push(root);
+        const local = join(root, "Local"), roaming = join(root, "Roaming");
+        const app = join(local, "Discord", "app-1.0.9270", "resources");
+        mkdirSync(app, { recursive: true });
+        writeFileSync(join(app, "app.asar"), Buffer.alloc(700 * 1024, 7));
+        // A leftover backup folder from something else, newer by name than any real one.
+        const stale = join(roaming, "Vencord", "dist.backup-29990101-000000");
+        mkdirSync(stale, { recursive: true });
+        writeFileSync(join(stale, "renderer.js"), "unrelated old files");
+        const dist = join(roaming, "Vencord", "dist");
+        if (withVencord) {
+            mkdirSync(dist, { recursive: true });
+            writeFileSync(join(dist, "renderer.js"), "official vencord");
+            writeFileSync(join(dist, "patcher.js"), "official vencord patcher");
+        }
+        const exec = (...a: string[]) => spawnSync(exe, ["--local-appdata", local, "--appdata", roaming, ...a], { encoding: "utf8", timeout: 60_000 });
+        return { dist, stale, exec };
+    }
+
+    it("puts back the files it replaced, not some other backup folder, even after an update", () => {
+        const w = world(true);
+        expect(w.exec("--install", "Discord").status).toBe(0);
+        // Running the installer again (an update) must keep the record of the first backup.
+        expect(w.exec("--install", "Discord").status).toBe(0);
+        expect(readFileSync(join(w.dist, "cipher-build.txt"), "utf8")).toMatch(/^Backup: dist\.backup-\d{8}-\d{6}$/m);
+        expect(w.exec("--uninstall").status).toBe(0);
+        expect(readFileSync(join(w.dist, "renderer.js"), "utf8")).toBe("official vencord");
+        expect(existsSync(w.stale)).toBe(true);
+    });
+
+    it("restores nothing when there was no Vencord before", () => {
+        const w = world(false);
+        expect(w.exec("--install", "Discord").status).toBe(0);
+        expect(readFileSync(join(w.dist, "cipher-build.txt"), "utf8")).toMatch(/^Backup: none$/m);
+        expect(w.exec("--uninstall").status).toBe(0);
+        expect(existsSync(w.dist)).toBe(false);
+        expect(readFileSync(join(w.stale, "renderer.js"), "utf8")).toBe("unrelated old files");
+    });
+});

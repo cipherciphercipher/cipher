@@ -197,7 +197,7 @@ export async function requestUnlock(reason?: string): Promise<boolean> {
     }
     unlocking ??= promptPassphrase({
         title: "Unlock Cipher",
-        subtitle: reason ?? "Enter your Cipher passphrase (it protects your age key). Cipher stays unlocked until you lock it or restart Discord. For PGP, GnuPG asks for your key's passphrase itself.",
+        subtitle: reason ?? "Enter your Cipher passphrase (it protects your age key). Cipher stays unlocked until you lock it, you're away for a while (auto-lock, in Cipher's settings) or Discord restarts. For PGP, GnuPG asks for your key's passphrase itself.",
         onSubmit: p => identity.unlock(p)
     }).finally(() => unlocking = undefined);
     return unlocking;

@@ -20,6 +20,12 @@ import { state } from "./state";
 type Native = PluginNative<typeof import("./native")>;
 
 const CHECK_EVERY_MS = 15_000;
+/**
+ * A gap this long between checks means the computer was asleep. Well above
+ * one minute: browsers delay timers of hidden windows by up to a minute, and
+ * that must not lock Cipher while you're using another app.
+ */
+const SLEEP_GAP_MS = 3 * 60_000;
 
 let timer: ReturnType<typeof setInterval> | undefined;
 let lastTick = 0;
@@ -53,7 +59,7 @@ async function idleMs(): Promise<{ idle: number; screenLocked: boolean; }> {
 async function check() {
     const now = Date.now();
     // A long gap between checks means the computer was asleep.
-    const slept = lastTick !== 0 && now - lastTick > CHECK_EVERY_MS * 4;
+    const slept = lastTick !== 0 && now - lastTick > SLEEP_GAP_MS;
     lastTick = now;
     const minutes = settings.store.autoLockMinutes ?? 15;
     if (!minutes || !state.ready || !state.identity.isUnlocked) return;

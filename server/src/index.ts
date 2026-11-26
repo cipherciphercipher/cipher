@@ -136,9 +136,14 @@ async function sha256Hex(s: string): Promise<string> {
     return [...d].map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
+/** The imported key is reused: every request needs it several times. */
+let importedKey: { secret: string; key: Promise<CryptoKey>; } | undefined;
+
 async function hmacKey(secret: string): Promise<CryptoKey> {
     if (!secret || secret.length < 32) throw new HttpError(500, "server-misconfigured");
-    return crypto.subtle.importKey("raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"]);
+    if (importedKey?.secret !== secret)
+        importedKey = { secret, key: crypto.subtle.importKey("raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"]) };
+    return importedKey.key;
 }
 
 async function hmacB64(secret: string, msg: string): Promise<string> {
@@ -625,11 +630,17 @@ export async function handle(req: Request, env: Env, deps: Deps): Promise<Respon
 
 /** Hourly jobs: expired messages, due key resets, usage counters from earlier days, old monthly totals. */
 export async function cleanup(env: Env, now: number) {
-    await messageStore(env).sweep(now);
-    await applyDueResets(env, now);
-    await env.DB.prepare("DELETE FROM usage WHERE day < ?1").bind(today(now)).run();
     const twoMonthsAgo = thisMonth(now - 62 * DAY);
-    await env.DB.prepare("DELETE FROM budget WHERE month < ?1").bind(twoMonthsAgo).run();
+    // Each job runs even if another fails, so one error can't stop expired
+    // messages from being deleted or due key changes from taking effect.
+    const results = await Promise.allSettled([
+        messageStore(env).sweep(now),
+        applyDueResets(env, now),
+        env.DB.prepare("DELETE FROM usage WHERE day < ?1").bind(today(now)).run(),
+        env.DB.prepare("DELETE FROM budget WHERE month < ?1").bind(twoMonthsAgo).run()
+    ]);
+    const failed = results.find(r => r.status === "rejected");
+    if (failed) throw (failed as PromiseRejectedResult).reason;
 }
 
 export default {

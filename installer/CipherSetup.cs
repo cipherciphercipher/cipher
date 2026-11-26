@@ -261,20 +261,61 @@ namespace CipherSetup
         static bool DistIsCipher(Env env) { return File.Exists(Path.Combine(env.Dist, BuildMarkerFile)); }
 
         /// <summary>Writes the embedded files to the dist folder, backing up a dist that isn't Cipher's.</summary>
+        const string BackupLine = "Backup: ";
+        const string NoBackup = "none";
+
+        /// <summary>
+        /// Which backup folder the installed files replaced, from the marker file:
+        /// a folder name, "" when there was nothing to back up, or null when the
+        /// marker doesn't say (installed by Cipher-Setup 0.1.0).
+        /// </summary>
+        static string RecordedBackup(Env env)
+        {
+            try
+            {
+                foreach (var line in File.ReadAllLines(Path.Combine(env.Dist, BuildMarkerFile)))
+                {
+                    if (!line.StartsWith(BackupLine)) continue;
+                    string name = line.Substring(BackupLine.Length).Trim();
+                    if (name == NoBackup) return "";
+                    // A plain folder name next to dist, never a path.
+                    return Regex.IsMatch(name, @"^dist\.backup-[0-9-]{1,40}$") ? name : "";
+                }
+            }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+            return null;
+        }
+
         static void WriteDist(Env env, Action<string> log)
         {
-            if (Directory.Exists(env.Dist) && !DistIsCipher(env))
-            {
-                string backup = env.Dist + ".backup-" + DateTime.Now.ToString("yyyyMMdd-HHmmss");
-                Directory.Move(env.Dist, backup);
-                log("Backed up the existing Vencord files to " + backup);
-            }
+            // Write the new files next to the folder first: if anything is wrong
+            // with this exe, nothing of the user's has been touched yet.
             string staging = env.Dist + ".new";
             if (Directory.Exists(staging)) Directory.Delete(staging, true);
             Directory.CreateDirectory(staging);
             foreach (var f in DistFiles) File.WriteAllBytes(Path.Combine(staging, f), Embedded(f));
-            File.WriteAllText(Path.Combine(staging, BuildMarkerFile), "Installed by Cipher-Setup.exe " + BuildVersion + "\n");
-            if (Directory.Exists(env.Dist)) Directory.Delete(env.Dist, true);
+
+            string backup = NoBackup;
+            if (Directory.Exists(env.Dist))
+            {
+                if (DistIsCipher(env))
+                {
+                    // An update: keep pointing at the backup made by the first install.
+                    string recorded = RecordedBackup(env);
+                    backup = recorded == null ? null : recorded == "" ? NoBackup : recorded;
+                    Directory.Delete(env.Dist, true);
+                }
+                else
+                {
+                    backup = "dist.backup-" + DateTime.Now.ToString("yyyyMMdd-HHmmss");
+                    string to = Path.Combine(Path.GetDirectoryName(env.Dist), backup);
+                    Directory.Move(env.Dist, to);
+                    log("Backed up the existing Vencord files to " + to);
+                }
+            }
+            File.WriteAllText(Path.Combine(staging, BuildMarkerFile),
+                "Installed by Cipher-Setup.exe " + BuildVersion + "\n" + (backup != null ? BackupLine + backup + "\n" : ""));
             Directory.Move(staging, env.Dist);
             log("Installed the Vencord + Cipher files into " + env.Dist);
         }
@@ -315,12 +356,17 @@ namespace CipherSetup
             }
             if (DistIsCipher(env))
             {
+                string recorded = RecordedBackup(env);
+                string parent = Path.GetDirectoryName(env.Dist);
                 Directory.Delete(env.Dist, true);
                 log("Removed the Vencord + Cipher files.");
-                string parent = Path.GetDirectoryName(env.Dist);
-                var backup = Directory.Exists(parent)
-                    ? Directory.GetDirectories(parent, "dist.backup-*").OrderByDescending(p => p).FirstOrDefault()
-                    : null;
+                // Put back exactly the folder the install replaced. Only installs made by
+                // Cipher-Setup 0.1.0 (no record) fall back to the newest backup folder.
+                string backup = null;
+                if (recorded == null)
+                    backup = Directory.GetDirectories(parent, "dist.backup-*").OrderByDescending(p => p).FirstOrDefault();
+                else if (recorded != "" && Directory.Exists(Path.Combine(parent, recorded)))
+                    backup = Path.Combine(parent, recorded);
                 if (backup != null)
                 {
                     Directory.Move(backup, env.Dist);
