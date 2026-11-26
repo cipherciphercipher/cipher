@@ -12,6 +12,7 @@ import type { DecryptedMessage } from "../core/compose";
 import { isPureCipherContent, type MessageLink, parseAttachmentName, parseContent, type ParsedContent } from "../core/envelope";
 import { safeMessage } from "../core/errors";
 import { inspectKey, KEY_PROBLEM_TEXT, KEY_TYPE_LABEL, type KeyInfo, keyLabel, type KeyType } from "../core/keys";
+import { decryptsAutomatically } from "../core/pgpCipher";
 import { cipherAttachments, collectParts, decryptCached, type DecryptOutcome, fetchAttachmentText, isPgpPaused, onPgpPauseChange, partsSignature, precheck, setPgpPaused, siblingTypes } from "../receive";
 import { linkLoadPolicy } from "../core/serverApi";
 import { fetchMessage, serverOrigin } from "../server";
@@ -119,9 +120,9 @@ function usePgpPaused() {
     return paused;
 }
 
-function useOutcome(type: KeyType, armored: string, tryHidden: boolean) {
+function useOutcome(type: KeyType, armored: string, tryHidden: boolean, allowed: boolean) {
     const ready = useCipher();
-    const [outcome, setOutcome] = useState<DecryptOutcome | "locked" | "loading" | "paused">("loading");
+    const [outcome, setOutcome] = useState<DecryptOutcome | "locked" | "loading" | "paused" | "stranger">("loading");
     const unlocked = ready && state.identity.isUnlocked;
     const hasKey = ready && state.identity.has(type);
     const paused = usePgpPaused() && type === "pgp";
@@ -130,10 +131,10 @@ function useOutcome(type: KeyType, armored: string, tryHidden: boolean) {
         if (!ready) return;
         let live = true;
         (async () => {
-            if (!unlocked || paused) {
-                // Answer what we can without the passphrase.
+            if (!unlocked || paused || !allowed) {
+                // Answer what we can in JavaScript, without GnuPG or the passphrase.
                 const pre = await precheck(type, armored, { tryHidden });
-                if (live) setOutcome(pre ?? (paused ? "paused" : "locked"));
+                if (live) setOutcome(pre ?? (!allowed ? "stranger" : paused ? "paused" : "locked"));
                 return;
             }
             setOutcome("loading");
@@ -141,7 +142,7 @@ function useOutcome(type: KeyType, armored: string, tryHidden: boolean) {
             if (live) setOutcome(r);
         })();
         return () => void (live = false);
-    }, [ready, unlocked, paused, tryHidden, hasKey, armored, type, state.contacts?.list().length]);
+    }, [ready, unlocked, paused, tryHidden, allowed, hasKey, armored, type, state.contacts?.list().length]);
 
     return outcome;
 }
@@ -244,7 +245,10 @@ function LinkCopy({ message, link, expiresAt, siblings }: { message: Message; li
 
 function Decrypt({ message, type, armored, set, ref_, siblings: siblingOverride }: { message: Message; type: KeyType; armored: string; set?: string; ref_?: string; siblings?: KeyType[]; }) {
     const [tryHidden, setTryHidden] = useState(false);
-    const outcome = useOutcome(type, armored, tryHidden);
+    const [clicked, setClicked] = useState(false);
+    const author = message.author?.id;
+    const trusted = !!author && (author === selfId() || !!state.contacts?.get(author));
+    const outcome = useOutcome(type, armored, tryHidden, clicked || decryptsAutomatically(type, trusted));
 
     if (outcome === "loading") return <Shell tone="muted">Decrypting…</Shell>;
     if (outcome === "locked") {
@@ -252,6 +256,15 @@ function Decrypt({ message, type, armored, set, ref_, siblings: siblingOverride 
             <Shell tone="muted">
                 <span>Encrypted {KEY_TYPE_LABEL[type]} message. </span>
                 <Button size="min" variant="secondary" onClick={() => requestUnlock()}>Unlock to read</Button>
+            </Shell>
+        );
+    }
+    if (outcome === "stranger") {
+        return (
+            <Shell tone="muted">
+                <span>Encrypted PGP message from someone who isn't one of your contacts. </span>
+                <Button size="min" variant="secondary" onClick={() => setClicked(true)}>Decrypt</Button>
+                <div className={cl("hint")}>Cipher only hands PGP messages from you and your contacts to GnuPG by itself.</div>
             </Shell>
         );
     }
@@ -268,7 +281,7 @@ function Decrypt({ message, type, armored, set, ref_, siblings: siblingOverride 
         return (
             <Shell tone="muted">
                 <span>{outcome.message} </span>
-                <Button size="min" variant="secondary" onClick={() => setTryHidden(true)}>Try to decrypt</Button>
+                <Button size="min" variant="secondary" onClick={() => { setClicked(true); setTryHidden(true); }}>Try to decrypt</Button>
             </Shell>
         );
     }

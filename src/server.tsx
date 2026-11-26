@@ -149,7 +149,7 @@ async function requireSession(): Promise<Session> {
 export interface PendingChange { removal: boolean; fingerprint: string | null; effectiveAt: number; }
 
 export interface DirectoryKey {
-    type: KeyType; key: string; fingerprint: string; updatedAt: number;
+    type: KeyType; key: string; fingerprint: string;
     /** When the key's fingerprint last changed, and how: first key, approved by the old key, or a reset without it. */
     changedAt?: number;
     how?: "new" | "proven" | "reset";
@@ -168,7 +168,7 @@ function readDirectoryKey(k: any): DirectoryKey | null {
         ? { removal: p.removal === true, fingerprint: typeof p.fingerprint === "string" && /^(?:[0-9A-F]{40}|[0-9A-F]{64})$/.test(p.fingerprint) ? p.fingerprint : null, effectiveAt: num(p.effectiveAt)! }
         : undefined;
     return {
-        type: k.type, key: k.key, fingerprint: k.fingerprint, updatedAt: num(k.updatedAt) ?? 0,
+        type: k.type, key: k.key, fingerprint: k.fingerprint,
         changedAt: num(k.changedAt), how: ["new", "proven", "reset"].includes(k.how) ? k.how : undefined,
         ...pending ? { pending } : {}
     };

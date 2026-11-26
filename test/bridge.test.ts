@@ -139,3 +139,12 @@ describe("the default server", () => {
         expect(linkLoadPolicy(DEFAULT_SERVER_URL, "https://other.example.com", true)).toBe("never");
     });
 });
+
+describe("zero-click exposure of GnuPG", () => {
+    it("decrypts PGP by itself only for you and your contacts; age always", async () => {
+        const { decryptsAutomatically } = await import("../src/core/pgpCipher");
+        expect(decryptsAutomatically("pgp", false)).toBe(false);
+        expect(decryptsAutomatically("pgp", true)).toBe(true);
+        expect(decryptsAutomatically("age", false)).toBe(true);
+    });
+});

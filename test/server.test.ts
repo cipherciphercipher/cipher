@@ -222,7 +222,9 @@ describe("server: key directory", () => {
         r = await req("GET", `/v1/keys/${OLD_USER}`);
         const got = await r.json() as { keys: { type: string; key: string; how: string; changedAt: number; pending?: unknown; }[]; };
         expect(got.keys.map(k => k.type)).toEqual(["age", "pgp"]);
-        expect(got.keys[0]).toMatchObject({ key: a.recipient, how: "new", changedAt: clock });
+        expect(got.keys[0]).toMatchObject({ key: a.recipient, how: "new" });
+        // No activity timestamps for a first key, and no exact times at all.
+        expect(Object.keys(got.keys[0]).sort()).toEqual(["fingerprint", "how", "key", "type"]);
         expect(got.keys[0].pending).toBeUndefined();
 
         expect((await req("POST", "/v1/keys/remove", { token, body: { type: "age", proof: await proveAge(token, a) } })).status).toBe(200);
@@ -397,6 +399,8 @@ describe("server: proof that a key is yours", () => {
         clock += 1;
         k = await lookup();
         expect(k).toMatchObject({ key: attacker.recipient, how: "reset" });
+        // The change shows its day only, never an exact time.
+        expect((k as unknown as { changedAt: number; }).changedAt % 86_400_000).toBe(0);
         expect(k.pending).toBeUndefined();
     });
 

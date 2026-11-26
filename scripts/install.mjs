@@ -153,7 +153,8 @@ step("Installing Vencord's dependencies (from its lockfile)");
 pnpm("install", "--frozen-lockfile");
 
 step(`Adding Cipher's dependency ${audited.root}`);
-pnpm("add", "-w", ...depSpecs);
+// --ignore-scripts: nothing from the registry runs before the closure check below.
+pnpm("add", "-w", "--ignore-scripts", ...depSpecs);
 
 step("Checking the added packages against the reviewed ones (AUDIT.md)");
 const actual = dependencyClosure(readFileSync(join(vencord, "pnpm-lock.yaml"), "utf8"), audited.root);

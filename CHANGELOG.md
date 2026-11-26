@@ -32,6 +32,10 @@ All notable changes to Cipher are listed here. The format follows
   messages stored elsewhere are shown as a note, not loaded. Messages on your server from
   people who aren't contacts need a click, so strangers can't burn its quota.
 - The server refuses plain http.
+- PGP messages from people who aren't contacts need a click before GnuPG sees them (closing
+  the last zero-click path to GnuPG). age messages still decrypt by themselves.
+- Key lookups no longer return exact timestamps; only the day of a key change.
+- The installer adds Cipher's dependency with `--ignore-scripts`.
 - Cipher now comes set to the project's own server. Clear the address to keep everything in
   Discord; "Use the default server" brings it back.
 - Server responses carry stricter headers (sandboxed CSP, no framing, same-origin only).

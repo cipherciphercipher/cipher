@@ -196,9 +196,12 @@ written in the tests.
 Anything in a channel you're viewing is read automatically, so Cipher keeps that path narrow:
 
 - PGP messages are first read by Cipher's own JavaScript (`src/core/pgpPackets.ts`) to see
-  which keys they're for. Only messages addressed to one of your keys are handed to GnuPG, so a
-  stranger's message never reaches GnuPG's C code. Messages that hide their recipients need a
-  click ("Try to decrypt").
+  which keys they're for. Only messages addressed to one of your keys are handed to GnuPG, and
+  **only messages from you and your contacts go to GnuPG without a click**: your key ID is
+  public, so anyone could address a message to you, and a stranger's message never reaches
+  GnuPG's C code (or opens a passphrase prompt) unless you click Decrypt. Messages that hide
+  their recipients always need a click. age messages are decrypted by memory-safe JavaScript
+  and need no click.
 - A PGP key posted by someone who isn't a contact is only handed to GnuPG when you click
   "Check key". age keys are checked in JavaScript. Contacts' keys are checked at once, so a key
   change is noticed.
@@ -242,6 +245,9 @@ posted in Discord.
 
 A Cipher server ([server/README.md](server/README.md)) holds a public-key directory and
 disappearing messages (1, 3 or 7 days). It never gets plaintext or private keys.
+
+Publishing a key makes it public that your Discord account uses Cipher; lookups return the key,
+how it last changed, and the day of that change (no exact times, nothing for a first key).
 
 What a server operator (or anyone who breaks into the server) can do:
 

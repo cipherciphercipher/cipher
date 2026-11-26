@@ -419,9 +419,11 @@ const routes: [string, RegExp, Handler][] = [
             await applyDueResets(env, now, userId);
             r = await select();
         }
+        // Public, so as little activity metadata as Cipher needs: how the key last changed,
+        // and on which day (only for changes, not first publication). No exact times.
         const keys = (r.results ?? []).map(k => ({
-            type: k.type, key: k.material, fingerprint: k.fingerprint, updatedAt: k.updated_at,
-            firstAt: k.first_at, changedAt: k.changed_at, how: k.how,
+            type: k.type, key: k.material, fingerprint: k.fingerprint, how: k.how,
+            ...k.how !== "new" ? { changedAt: Math.floor(k.changed_at / DAY) * DAY } : {},
             ...k.pending_at !== null ? { pending: { removal: k.pending_material === "", fingerprint: k.pending_material === "" ? null : k.pending_fingerprint, effectiveAt: k.pending_at } } : {}
         }));
         return json(keys.length ? 200 : 404, { userId, keys });

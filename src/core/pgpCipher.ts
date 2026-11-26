@@ -68,6 +68,17 @@ export function pgpDecrypt(engine: PgpEngine, armored: string, verificationKeys:
 }
 
 /**
+ * Whether a message is decrypted without a click. age is memory-safe
+ * JavaScript, so always. PGP goes to GnuPG's C code, so only for messages
+ * from you and your contacts: anyone can address a PGP message to your key
+ * (its ID is public), and a stranger's message must never reach GnuPG
+ * unless you click. This also stops strangers from opening passphrase prompts.
+ */
+export function decryptsAutomatically(type: "age" | "pgp", trustedAuthor: boolean): boolean {
+    return type === "age" || trustedAuthor;
+}
+
+/**
  * Whether a message is addressed to one of `ownKeyIds`, read from its packets
  * in JavaScript without running GnuPG: "hidden" when it hides its recipients,
  * "no" for passphrase messages. Strangers' messages never reach GnuPG.
