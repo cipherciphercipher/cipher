@@ -10,6 +10,14 @@
  * URLs or other parts of a server.
  */
 
+/**
+ * The Cipher project's own server, used until you clear or change the
+ * address. It only ever gets public keys and ciphertext, and Cipher treats
+ * it like any other server: nothing it sends is run, keys from it start
+ * unverified, and messages from it must match the hash in Discord.
+ */
+export const DEFAULT_SERVER_URL = "https://cipher-server.cipherproj.workers.dev";
+
 export const SERVER_TOKEN_RE = /^c1\.\d{17,20}\.\d{1,12}\.[A-Za-z0-9_-]{43}$/;
 export const DELETE_TOKEN_RE = /^[A-Za-z0-9_-]{43}$/;
 export const LINK_ID_RE = /^[137][A-Za-z0-9_-]{22}$/;

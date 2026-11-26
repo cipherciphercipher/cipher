@@ -8,6 +8,7 @@ import { definePluginSettings } from "@api/Settings";
 import { OptionType } from "@utils/types";
 
 import { DEFAULT_MAX_MESSAGES } from "./core/compose";
+import { DEFAULT_SERVER_URL } from "./core/serverApi";
 import { KeyManager } from "./ui/KeyManager";
 
 export const settings = definePluginSettings({
@@ -24,8 +25,8 @@ export const settings = definePluginSettings({
     },
     serverUrl: {
         type: OptionType.STRING,
-        description: "Cipher server address (optional), e.g. https://cipher.example.com. Enables the key directory and disappearing messages. Leave empty to keep everything in Discord.",
-        default: ""
+        description: "Cipher server for the key directory and disappearing messages. By default the Cipher project's server; it's only contacted when you sign in, publish or look up a key, send a disappearing message, or open one from you or a contact. Clear the field to keep everything in Discord, or enter your own server.",
+        default: DEFAULT_SERVER_URL
     },
     hideCiphertext: {
         type: OptionType.BOOLEAN,

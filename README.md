@@ -66,7 +66,9 @@ You choose who can read each message: one person in a DM, or up to 10 people
   (find someone's key by their Discord account) and **disappearing messages** kept for 1, 3 or
   7 days, with only a short encoded reference in Discord (no clickable link). You host it yourself on Cloudflare; it only ever
   gets public keys and ciphertext. Changing a published key needs proof from the key itself,
-  so a stolen Discord login can't swap it.
+  so a stolen Discord login can't swap it. Cipher comes set to the project's own server
+  (free, run by the maintainer); clear the address in settings to keep everything in Discord,
+  or host your own.
 - **Long messages**: compressed if that helps, then split across several messages, and
   sent as an attachment beyond a configurable limit (default 4 messages).
 

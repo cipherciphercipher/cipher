@@ -11,7 +11,7 @@ import { Modal, openModal, UserStore, useEffect, useState } from "@webpack/commo
 
 import { CipherError, safeMessage } from "../core/errors";
 import { formatFingerprint, inspectKey, KEY_PROBLEM_TEXT, type KeyInfo, keyLabel, type KeyType } from "../core/keys";
-import { normalizeServerUrl } from "../core/serverApi";
+import { DEFAULT_SERVER_URL, normalizeServerUrl } from "../core/serverApi";
 import { lockCipher } from "../autoLock";
 import { type DirectoryKey, getSession, type KeyChange, lookupKeys, OldKeyNeeded, publishKey, serverOrigin, signIn, signOut, unexpectedKeyChanges, unpublishKey } from "../server";
 import { settings } from "../settings";
@@ -424,13 +424,22 @@ function ServerCard() {
         settings.store.serverUrl = v ? normalizeServerUrl(v)! : "";
         toastOk(v ? "Server saved" : "Server removed: everything stays in Discord");
     };
+    const useDefault = () => {
+        setDraft(DEFAULT_SERVER_URL);
+        settings.store.serverUrl = DEFAULT_SERVER_URL;
+        toastOk("Using the Cipher project's server");
+    };
 
     return (
         <div className={cl("card")}>
             <div className={cl("hint")}>Optional. A Cipher server lets people find your public key by your Discord account, and holds disappearing messages (deleted after 1–7 days). It only ever gets public keys and encrypted text, never plaintext. Publishing or changing a key needs proof from the key itself, so your Discord login alone can't change it.</div>
+            <div className={cl("hint")}>{origin === DEFAULT_SERVER_URL
+                ? "This is the Cipher project's server (free, run by the maintainer). It's only contacted when you sign in, publish or look up a key, send a disappearing message, or open one from you or a contact; it can see your IP address then. Clear the address to keep everything in Discord, or run your own (see server/README.md)."
+                : !origin ? "No server: everything stays in Discord. The key directory and disappearing messages are off." : "Your own server: Cipher contacts no other."}</div>
             <div className={cl("row")}>
                 <TextField value={draft} onChange={setDraft} placeholder="https://cipher.example.com" onEnter={save} />
                 <Button size="small" variant="secondary" onClick={save}>Save</Button>
+                {origin !== DEFAULT_SERVER_URL && <Button size="small" variant="secondary" onClick={useDefault}>Use the default server</Button>}
             </div>
             {origin && session === null && <div><Button size="small" disabled={busy} onClick={() => act(async () => { await signIn(); return "Signed in to the Cipher server"; })}>Sign in with Discord</Button></div>}
             {origin && session && (

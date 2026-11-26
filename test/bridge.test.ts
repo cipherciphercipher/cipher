@@ -127,3 +127,15 @@ describe("developer check script", () => {
         expect(r.stderr).toContain("VENCORD_REF must be a plain tag or branch name");
     });
 });
+
+describe("the default server", () => {
+    it("is a clean https origin on a public host, so every safety check applies to it", async () => {
+        const { DEFAULT_SERVER_URL, normalizeServerUrl, isPublicHostname, serverRequestUrl } = await import("../src/core/serverApi");
+        expect(normalizeServerUrl(DEFAULT_SERVER_URL)).toBe(DEFAULT_SERVER_URL);
+        expect(DEFAULT_SERVER_URL.startsWith("https://")).toBe(true);
+        expect(isPublicHostname(new URL(DEFAULT_SERVER_URL).hostname)).toBe(true);
+        expect(serverRequestUrl(DEFAULT_SERVER_URL, "GET", "/v1/oauth")).toBe(DEFAULT_SERVER_URL + "/v1/oauth");
+        // With it set, no other server is ever contacted.
+        expect(linkLoadPolicy(DEFAULT_SERVER_URL, "https://other.example.com", true)).toBe("never");
+    });
+});

@@ -231,6 +231,15 @@ Anything in a channel you're viewing is read automatically, so Cipher keeps that
 
 ## The Cipher server (optional)
 
+Cipher comes set to the project's own server, `https://cipher-server.cipherproj.workers.dev`,
+run by the maintainer on Cloudflare's free plan with the code in `server/`. It's only contacted
+when you sign in, publish or look up a key, send a disappearing message, or open one from
+yourself or a contact; a fresh install that uses none of these never contacts it. Clearing the
+address in Cipher's settings turns it off for good (an empty field stays empty), and you can
+run your own instead. Everything below applies to it exactly as to any other server: nothing it
+sends is ever run, keys from it start unverified, and messages from it must match the hash
+posted in Discord.
+
 A Cipher server ([server/README.md](server/README.md)) holds a public-key directory and
 disappearing messages (1, 3 or 7 days). It never gets plaintext or private keys.
 

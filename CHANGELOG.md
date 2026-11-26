@@ -32,6 +32,8 @@ All notable changes to Cipher are listed here. The format follows
   messages stored elsewhere are shown as a note, not loaded. Messages on your server from
   people who aren't contacts need a click, so strangers can't burn its quota.
 - The server refuses plain http.
+- Cipher now comes set to the project's own server. Clear the address to keep everything in
+  Discord; "Use the default server" brings it back.
 - Server responses carry stricter headers (sandboxed CSP, no framing, same-origin only).
 - Cipher server: Discord sign-in tokens are revoked as soon as the user ID is read, sign-in
   attempts are capped per IP, malformed age keys get a clean refusal, RSA keys with a weak
