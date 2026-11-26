@@ -74,6 +74,34 @@ You choose who can read each message: one person in a DM, or up to 10 people
 
 ## Install
 
+### Windows: one click
+
+1. Download **`Cipher-Setup.exe`** from the [latest release](https://github.com/cipherciphercipher/cipher/releases/latest).
+2. Double-click it, pick your Discord, click **Install**. (Windows may say "Windows protected
+   your PC" because the file isn't signed with a paid certificate: click **More info → Run
+   anyway**.)
+3. Start Discord and turn on **Cipher** in Settings → Vencord → Plugins.
+
+No admin rights, nothing else to install. **Uninstall** in the same window puts everything
+back. What it changes, and nothing else: the Vencord + Cipher files in
+`%APPDATA%\Vencord\dist` (an existing Vencord there is backed up and restored on uninstall),
+and, only for an unmodified Discord, the same small loader in Discord's `resources` folder
+that Vencord's own installer uses. A Discord already set up by Vencord keeps its loader; one
+modified by other software isn't touched at all. Source: [`installer/CipherSetup.cs`](installer/CipherSetup.cs).
+
+**Checking the download** (optional): every `Cipher-Setup.exe` is built by GitHub Actions from
+the tagged source, with a checksum and a signed build record:
+
+```powershell
+Get-FileHash Cipher-Setup.exe   # compare with Cipher-Setup.exe.sha256 on the release
+gh attestation verify Cipher-Setup.exe -R cipherciphercipher/cipher
+```
+
+To build it yourself on Windows (uses the C# compiler that comes with Windows, nothing to
+download beyond Vencord): `node scripts/build-exe.mjs`, output in `dist-exe/`.
+
+### From source (any system)
+
 Cipher is a [userplugin](https://docs.vencord.dev/installing/custom-plugins/): it's built
 into Vencord from source. The installer does all of that for you.
 

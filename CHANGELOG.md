@@ -65,6 +65,10 @@ All notable changes to Cipher are listed here. The format follows
 
 ### Added
 
+- `Cipher-Setup.exe`: a one-click Windows installer (install, uninstall, no admin rights),
+  built by GitHub Actions with a checksum and build provenance, from `installer/CipherSetup.cs`
+  using the C# compiler that ships with Windows. It never touches a Discord modified by other
+  software, and leaves existing Vencord loaders as they are.
 - Post-quantum age keys (ML-KEM-768 + X25519). Normal and post-quantum age keys are never mixed
   in one ciphertext; key shares carry the long post-quantum key in a compact form that fits in
   one Discord message.

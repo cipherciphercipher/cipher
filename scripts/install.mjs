@@ -54,7 +54,7 @@ const option = name => {
     if (!v || v.startsWith("--")) fail(`${name} needs a value.`);
     return v;
 };
-const known = new Set(["--inject", "--no-inject", "--deploy", "--dir", "--vencord", "--help", "-h"]);
+const known = new Set(["--inject", "--no-inject", "--deploy", "--build-only", "--dir", "--vencord", "--help", "-h"]);
 for (let i = 0; i < args.length; i++) {
     if (!known.has(args[i])) fail(`Unknown option ${args[i]}. Run with --help.`);
     if (["--deploy", "--dir", "--vencord"].includes(args[i])) i++;
@@ -67,8 +67,9 @@ if (flag("--help") || flag("-h")) {
 const deployTo = option("--deploy");
 const ownCheckout = option("--vencord");
 const vencord = resolve(ownCheckout ?? option("--dir") ?? join(homedir(), "Vencord-Cipher"));
-if ([flag("--inject"), flag("--no-inject"), !!deployTo].filter(Boolean).length > 1)
-    fail("Use only one of --inject, --no-inject and --deploy.");
+const buildOnly = flag("--build-only");
+if ([flag("--inject"), flag("--no-inject"), !!deployTo, buildOnly].filter(Boolean).length > 1)
+    fail("Use only one of --inject, --no-inject, --deploy and --build-only.");
 
 /* ---------- helpers ---------- */
 
@@ -181,7 +182,8 @@ cpSync(join(root, "src"), target, { recursive: true });
 
 /* ---------- 5. build ---------- */
 
-const standalone = !!deployTo;
+// --build-only: the same standalone build, left in <checkout>/dist (used by build-exe.mjs).
+const standalone = !!deployTo || buildOnly;
 step(standalone ? "Building Vencord (standalone, updater off)" : "Building Vencord");
 // The standalone copy has Vencord's updater turned off: an update from the
 // official releases would replace this build and remove Cipher. Run this
@@ -192,7 +194,9 @@ pnpm("build", ...standalone ? ["--standalone", "--disable-updater"] : []);
 
 const DIST_FILES = /^(?:patcher|preload|renderer)\.(?:js|css)(?:\.map|\.LEGAL\.txt)?$/;
 
-if (deployTo) {
+if (buildOnly) {
+    console.log(`\n✔ Standalone build (updater off) in ${join(vencord, "dist")}.`);
+} else if (deployTo) {
     const dest = resolve(deployTo);
     if (!existsSync(dest)) fail(`${dest} doesn't exist.`);
     const existing = readdirSync(dest);

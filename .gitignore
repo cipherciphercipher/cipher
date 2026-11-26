@@ -6,3 +6,5 @@ coverage/
 # Your own deployment settings (database ID, address)
 server/wrangler.deploy.toml
 server/.wrangler/
+installer/build/
+dist-exe/

@@ -42,8 +42,8 @@ jobs:
         run: |
           name="cipher-$GITHUB_REF_NAME"
           mkdir -p "dist/$name/scripts"
-          cp -r src "dist/$name/"
-          cp scripts/install.mjs scripts/lockfile.mjs scripts/audited-deps.json "dist/$name/scripts/"
+          cp -r src installer "dist/$name/"
+          cp scripts/install.mjs scripts/build-exe.mjs scripts/lockfile.mjs scripts/audited-deps.json "dist/$name/scripts/"
           cp install.cmd install.sh package.json README.md LICENSE SECURITY.md AUDIT.md CHANGELOG.md "dist/$name/"
           cd dist
           zip -rX "$name.zip" "$name"
@@ -57,3 +57,35 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release create "$GITHUB_REF_NAME" --verify-tag --title "Cipher $GITHUB_REF_NAME" --notes-file notes.md dist/*.zip dist/*.zip.sha256
+
+  exe:
+    name: Windows installer (Cipher-Setup.exe)
+    needs: release
+    runs-on: windows-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Builds with the C# compiler that ships with Windows; nothing else is installed.
+      - run: node scripts/build-exe.mjs
+        shell: bash
+      # Installs and uninstalls into a fake Discord folder (never a real one).
+      - run: pnpm exec vitest run test/installer.test.ts
+        shell: bash
+      # A signed record that this exe was built here, from this tag: `gh attestation verify`.
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: dist-exe/Cipher-Setup.exe
+      - name: Attach to the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$GITHUB_REF_NAME" dist-exe/Cipher-Setup.exe dist-exe/Cipher-Setup.exe.sha256
