@@ -28,6 +28,11 @@ export const settings = definePluginSettings({
         description: "Cipher server for the key directory and disappearing messages. By default the Cipher project's server; it's only contacted when you sign in, publish or look up a key, send a disappearing message, or open one from you or a contact. Clear the field to keep everything in Discord, or enter your own server.",
         default: DEFAULT_SERVER_URL
     },
+    showContactBadges: {
+        type: OptionType.BOOLEAN,
+        description: "Show a small lock next to your Cipher contacts' names and in their profiles: green when you've compared codes, grey when not yet, red when they posted a different key. Only you see it, and it uses your own contact list (nothing is looked up online).",
+        default: true
+    },
     hideCiphertext: {
         type: OptionType.BOOLEAN,
         description: "Show decrypted messages in place of the encrypted text (green, with a lock). Each message has a \"Show encrypted text\" link. Display only: Discord still stores just the ciphertext.",

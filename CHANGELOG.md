@@ -36,6 +36,9 @@ All notable changes to Cipher are listed here. The format follows
   the last zero-click path to GnuPG). age messages still decrypt by themselves.
 - Key lookups no longer return exact timestamps; only the day of a key change.
 - The installer adds Cipher's dependency with `--ignore-scripts`.
+- A small lock next to your contacts' names (in messages, member and DM lists, and profiles):
+  green when codes were compared, grey when not yet, red after a key change. Only you see it;
+  it comes from your own contact list. Turn it off with "Show contact badges".
 - Cipher now comes set to the project's own server. Clear the address to keep everything in
   Discord; "Use the default server" brings it back.
 - Server responses carry stricter headers (sandboxed CSP, no framing, same-origin only).

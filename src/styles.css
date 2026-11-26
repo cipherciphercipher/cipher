@@ -102,3 +102,9 @@
 .vc-cipher-chatbar-readers { font-size: 12px; font-weight: 600; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .vc-cipher-chatbar-bad { color: var(--status-danger, #f23f43); }
 .vc-cipher-person { background: none; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; width: 100%; }
+
+/* Lock next to contacts' names */
+.vc-cipher-contact-badge { display: inline-flex; align-items: center; vertical-align: middle; margin-left: 4px; cursor: pointer; }
+.vc-cipher-contact-badge-verified { color: var(--status-positive, #23a55a); }
+.vc-cipher-contact-badge-unverified { color: var(--text-muted, #949ba4); }
+.vc-cipher-contact-badge-changed { color: var(--status-danger, #f23f43); }

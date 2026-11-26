@@ -25,6 +25,7 @@ import { selfId, state } from "./state";
 import { CipherAccessory, clearFetchedLinks } from "./ui/Accessory";
 import { CipherChatBarButton } from "./ui/ChatBar";
 import { confirmDanger, LockIcon, toastError } from "./ui/common";
+import { ContactBadge, contactProfileBadge } from "./ui/ContactBadge";
 import { openContactDialog } from "./ui/ContactDialog";
 import { clearHiddenContent } from "./ui/hideContent";
 import { openKeyManager } from "./ui/KeyManager";
@@ -140,6 +141,11 @@ export default definePlugin({
     onBeforeMessageEdit: onBeforeEdit,
 
     renderMessageAccessory: props => props.isMessageSnapshot ? null : <CipherAccessory message={props.message} />,
+
+    // A lock next to your contacts' names (messages, member and DM lists, profiles).
+    renderMessageDecoration: props => <ContactBadge userId={props.message?.author?.id} />,
+    renderMemberListDecorator: ({ user }) => <ContactBadge userId={user?.id} />,
+    userProfileBadge: contactProfileBadge,
 
     contextMenus: {
         "user-context": userContextPatch,
