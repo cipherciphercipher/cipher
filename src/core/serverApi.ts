@@ -69,6 +69,28 @@ export function isPublicHostname(hostname: string): boolean {
     return /^[a-z0-9-]+(?:\.[a-z0-9-]+)+$/.test(h);
 }
 
+export type LinkLoad = "auto" | "ask" | "never";
+
+/**
+ * Whether Cipher may contact the server holding a disappearing message:
+ *  - with your own server set, it's the only one ever contacted ("never" for
+ *    others). Messages there load by themselves only from you and your
+ *    contacts; anyone else's need a click ("ask"), so strangers can't post
+ *    fake links that make every reader use up your server's daily quota;
+ *  - without one, another server needs a click, and only at a public host
+ *    name (loading tells it your IP address and when you read the message).
+ */
+export function linkLoadPolicy(ownOrigin: string | null, linkOrigin: string, trustedAuthor: boolean): LinkLoad {
+    if (ownOrigin) return linkOrigin !== ownOrigin ? "never" : trustedAuthor ? "auto" : "ask";
+    let host: string;
+    try {
+        host = new URL(linkOrigin).hostname;
+    } catch {
+        return "never";
+    }
+    return isPublicHostname(host) ? "ask" : "never";
+}
+
 /** Where a link in a Discord message points, if it's a Cipher message link. */
 export function parseLinkUrl(url: string): { origin: string; id: string; } | null {
     let u: URL;

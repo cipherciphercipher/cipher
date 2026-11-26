@@ -13,6 +13,7 @@ import { isPureCipherContent, type MessageLink, parseAttachmentName, parseConten
 import { safeMessage } from "../core/errors";
 import { inspectKey, KEY_PROBLEM_TEXT, KEY_TYPE_LABEL, type KeyInfo, keyLabel, type KeyType } from "../core/keys";
 import { cipherAttachments, collectParts, decryptCached, type DecryptOutcome, fetchAttachmentText, isPgpPaused, onPgpPauseChange, partsSignature, precheck, setPgpPaused, siblingTypes } from "../receive";
+import { linkLoadPolicy } from "../core/serverApi";
 import { fetchMessage, serverOrigin } from "../server";
 import { settings } from "../settings";
 import { selfId, state, useCipher, userName } from "../state";
@@ -187,18 +188,13 @@ function LinkMessage({ message, parsed }: { message: Message; parsed: Extract<Pa
 }
 
 function LinkCopy({ message, link, expiresAt, siblings }: { message: Message; link: MessageLink; expiresAt: number; siblings: KeyType[]; }) {
-    // With your own server set, it's the only one Cipher ever contacts. Without
-    // one, another server is only contacted after a click: loading a link tells
-    // its server your IP address and when you read the message.
+    // Who may make Cipher contact which server: see linkLoadPolicy.
     const own = serverOrigin();
     const mine = own === link.origin;
-    // Even from your own server, only messages from you and your contacts load by
-    // themselves: otherwise anyone in a channel could post fake links that make
-    // every reader's Cipher hit your server, using up its free daily quota.
     const author = message.author?.id;
     const trusted = !!author && (author === selfId() || !!state.contacts.get(author));
-    const auto = mine && trusted;
-    const [allowed, setAllowed] = useState(auto);
+    const policy = linkLoadPolicy(own, link.origin, trusted);
+    const [allowed, setAllowed] = useState(policy === "auto");
     const [result, setResult] = useState<{ armored: string; } | { gone: true; } | { error: string; }>();
 
     useEffect(() => {
@@ -210,18 +206,20 @@ function LinkCopy({ message, link, expiresAt, siblings }: { message: Message; li
     }, [allowed, link.id]);
 
     const host = new URL(link.origin).host;
+    if (policy === "never") {
+        return (
+            <Shell tone="muted">
+                {own
+                    ? <>Disappearing message stored on {host}, a different Cipher server. Cipher only contacts your own server, so it wasn't loaded. Ask the sender to send it again without the disappearing option, or through your server.</>
+                    : <>Disappearing message stored on {host}, a local network or IP address. Cipher doesn't contact those for other people's messages.</>}
+            </Shell>
+        );
+    }
     if (mine && !allowed) {
         return (
             <Shell tone="muted">
                 <span>Disappearing message on your Cipher server, from someone who isn't one of your contacts. </span>
                 <Button size="min" variant="secondary" onClick={() => setAllowed(true)}>Load it</Button>
-            </Shell>
-        );
-    }
-    if (own && !mine) {
-        return (
-            <Shell tone="muted">
-                Disappearing message stored on {host}, a different Cipher server. Cipher only contacts your own server, so it wasn't loaded. Ask the sender to send it again without the disappearing option, or through your server.
             </Shell>
         );
     }
