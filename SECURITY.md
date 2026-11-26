@@ -206,7 +206,9 @@ Anything in a channel you're viewing is read automatically, so Cipher keeps that
   session-key packets, are refused before any key is tried.
 - PGP messages with any passphrase packet are refused before GnuPG decrypts them (see below).
 - With your own Cipher server set, it is the only server Cipher ever contacts: disappearing
-  messages stored anywhere else are not loaded at all. Without one, a link to
+  messages stored anywhere else are not loaded at all. Even from your server, only messages
+  from you and your contacts load by themselves; anyone else's need a click, so strangers
+  can't post fake links that make every reader hit your server and use up its quota. Without one, a link to
   any other server needs a click, because loading it tells that server your IP address, and
   is refused outright if it points at an IP address, localhost or a local-network name, so a
   message can't make Cipher send requests to your router or other devices.

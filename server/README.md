@@ -19,7 +19,8 @@ user's computer.
 | D1 `usage` | daily counters per **keyed hash** of the user ID (and IP, if the limiter is on) | deleted the next day |
 | D1 `budget` | number of uploads per month | about two months |
 
-No sender, recipients, channel or IP is stored with a message. There are no sessions: sign-in
+The server only answers over https (plain http gets a 403, not a redirect, so a misconfigured
+client can't send a token in the clear). No sender, recipients, channel or IP is stored with a message. There are no sessions: sign-in
 tokens are signed with `SECRET` and checked on each request. Logging is off.
 
 A full breach shows which Discord accounts published which public keys (public anyway) and

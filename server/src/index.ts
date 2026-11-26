@@ -599,6 +599,10 @@ const routes: [string, RegExp, Handler][] = [
 export async function handle(req: Request, env: Env, deps: Deps): Promise<Response> {
     try {
         const url = new URL(req.url);
+        // workers.dev also answers plain http. Refuse it rather than redirect, so a
+        // client that got it wrong fails loudly instead of sending a token in the clear.
+        const local = url.hostname === "localhost" || url.hostname === "127.0.0.1";
+        if (url.protocol !== "https:" && !local) throw new HttpError(403, "https-only");
         if (env.LIMITER) {
             const ip = req.headers.get("CF-Connecting-IP") ?? "unknown";
             const { success } = await env.LIMITER.limit({ key: await pseudonym(env, "ip", ip) });

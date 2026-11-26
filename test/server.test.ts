@@ -588,6 +588,14 @@ describe("server: disappearing messages", () => {
         expect((await req("GET", "/v1/health")).status).toBe(200);
     });
 
+    it("refuses plain http instead of redirecting (except localhost, for development)", async () => {
+        const plain = await handle(new Request("http://cipher.example/v1/health"), env, deps);
+        expect(plain.status).toBe(403);
+        expect(await plain.json()).toEqual({ error: "https-only" });
+        expect((await handle(new Request("http://localhost:8787/v1/health"), env, deps)).status).toBe(200);
+        expect((await req("GET", "/v1/health")).status).toBe(200);
+    });
+
     it("applies the per-IP limiter to every request", async () => {
         let n = 0;
         env.LIMITER = { limit: async () => ({ success: ++n <= 2 }) };
