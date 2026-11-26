@@ -6,11 +6,20 @@ All notable changes to Cipher are listed here. The format follows
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-26
+
 ### Security
 
 - A message is only replaced by its decrypted text when it is exactly what Cipher writes.
   Before, text added after an encrypted block (or extra words in its header line) was hidden
   from Cipher users while everyone else saw it.
+
+### Changed
+
+- Reader picker: a reader whose key you removed is now listed with **Add key** and **Remove**
+  buttons (before, they blocked sending and couldn't be unticked).
+- Reader picker: when you aren't signed in to the Cipher server, the "Disappears after" choices
+  are greyed out and a **Sign in with Discord** button is shown, instead of failing at send time.
 
 ### Fixed
 
@@ -141,5 +150,6 @@ review of the bundled code and `SECURITY.md` for the threat model. On Windows, i
 - Sends are blocked, never downgraded to plaintext, when encryption is on and something is
   wrong; edits are refused while encryption is on.
 
-[Unreleased]: https://github.com/cipherciphercipher/cipher/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/cipherciphercipher/cipher/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/cipherciphercipher/cipher/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/cipherciphercipher/cipher/releases/tag/v0.1.0

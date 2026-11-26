@@ -9,6 +9,7 @@ import type { Channel, RenderModalProps } from "@vencord/discord-types";
 import { Modal, openModal, useEffect, useMemo, useState } from "@webpack/common";
 
 import { formatKeyShare } from "../core/envelope";
+import { errorCode } from "../core/errors";
 import { inspectKey, KEY_PROBLEM_TEXT, KEY_TYPE_LABEL, type KeyType } from "../core/keys";
 import { type Candidate, describePlanError, MAX_RECIPIENTS, planEncryption, restrictToType } from "../core/recipients";
 import { loadCandidates, selfId, state, useCipher, userName } from "../state";
@@ -18,7 +19,7 @@ import { describeExposure, exposureFor } from "./exposure";
 import { openGroupEditor } from "./GroupEditor";
 import { openKeyManager } from "./KeyManager";
 import { LINK_TTL_DAYS, type LinkTtl } from "../core/serverApi";
-import { getSession, serverOrigin } from "../server";
+import { getSession, serverOrigin, signIn } from "../server";
 
 function Picker({ modal, channel }: { modal: RenderModalProps; channel: Channel; }) {
     useCipher();
@@ -31,9 +32,25 @@ function Picker({ modal, channel }: { modal: RenderModalProps; channel: Channel;
     const [linkDays, setLinkDays] = useState<LinkTtl | undefined>(prefs.mode === "off" ? undefined : prefs.linkDays);
     const server = serverOrigin();
     const [signedIn, setSignedIn] = useState<boolean>();
+    const [signingIn, setSigningIn] = useState(false);
     useEffect(() => {
         if (server) getSession().then(s => setSignedIn(!!s), () => setSignedIn(false));
     }, [server]);
+    // Disappearing messages need a sign-in; without one the choice isn't offered.
+    const canDisappear = !!server && signedIn !== false;
+    const days = canDisappear ? linkDays : undefined;
+    const doSignIn = async () => {
+        setSigningIn(true);
+        try {
+            await signIn();
+            setSignedIn(true);
+            toastOk("Signed in to the Cipher server");
+        } catch (e) {
+            if (errorCode(e) !== "cancelled") toastError(e);
+        } finally {
+            setSigningIn(false);
+        }
+    };
 
     const contactCount = state.contacts.list().length;
     useEffect(() => {
@@ -52,6 +69,10 @@ function Picker({ modal, channel }: { modal: RenderModalProps; channel: Channel;
     const list = [...candidates?.values() ?? []]
         .filter(c => !query || c.name.toLowerCase().includes(query.toLowerCase()))
         .sort((a, b) => Number(memberIds.has(b.userId)) - Number(memberIds.has(a.userId)) || a.name.localeCompare(b.name));
+
+    // Readers picked earlier whose key has since been removed: they block sending,
+    // so they're listed too and can be unticked.
+    const withoutKey = candidates ? selected.filter(id => !candidates.has(id)) : [];
 
     const count = selected.length + 1;
     const atCap = count >= MAX_RECIPIENTS;
@@ -75,7 +96,7 @@ function Picker({ modal, channel }: { modal: RenderModalProps; channel: Channel;
     const apply = async (mode: "once" | "sticky" | "off") => {
         try {
             if (mode === "off") await state.channels.turnOff(channel.id);
-            else await state.channels.set(channel.id, { mode, recipients: selected, allowSplit, ...server && linkDays ? { linkDays } : {} });
+            else await state.channels.set(channel.id, { mode, recipients: selected, allowSplit, ...days ? { linkDays: days } : {} });
             modal.onClose();
         } catch (e) {
             toastError(e);
@@ -148,13 +169,18 @@ function Picker({ modal, channel }: { modal: RenderModalProps; channel: Channel;
                     <div className={cl("stack-tight")}>
                         <div className={cl("row", "wrap")}>
                             <b>Delivery:</b>
-                            <Button size="min" variant={linkDays ? "secondary" : "primary"} onClick={() => setLinkDays(undefined)}>Kept in Discord</Button>
+                            <Button size="min" variant={days ? "secondary" : "primary"} onClick={() => setLinkDays(undefined)}>Kept in Discord</Button>
                             {LINK_TTL_DAYS.map(d => (
-                                <Button key={d} size="min" variant={linkDays === d ? "primary" : "secondary"} onClick={() => setLinkDays(d)}>Disappears after {d} day{d > 1 ? "s" : ""}</Button>
+                                <Button key={d} size="min" disabled={!canDisappear} variant={days === d ? "primary" : "secondary"} onClick={() => setLinkDays(d)}>Disappears after {d} day{d > 1 ? "s" : ""}</Button>
                             ))}
                         </div>
-                        {linkDays && <div className={cl("hint")}>The encrypted text goes to {new URL(server).host} and is deleted there after {linkDays} day{linkDays > 1 ? "s" : ""}. Discord only gets a short encoded reference. Readers need Cipher set to this same server to read it.</div>}
-                        {linkDays && signedIn === false && <Notice tone="warn">Sign in to the Cipher server first (Keys &amp; contacts → Cipher server).</Notice>}
+                        {days && <div className={cl("hint")}>The encrypted text goes to {new URL(server).host} and is deleted there after {days} day{days > 1 ? "s" : ""}. Discord only gets a short encoded reference. Readers need Cipher set to this same server to read it.</div>}
+                        {signedIn === false && (
+                            <div className={cl("row", "wrap")}>
+                                <span className={cl("hint")}>Disappearing messages need a sign-in to the Cipher server ({new URL(server).host}).</span>
+                                <Button size="min" variant="secondary" disabled={signingIn} onClick={doSignIn}>Sign in with Discord</Button>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -162,9 +188,19 @@ function Picker({ modal, channel }: { modal: RenderModalProps; channel: Channel;
 
                 <div className={cl("list")}>
                     {!candidates && <div className={cl("hint")}>Checking keys…</div>}
-                    {candidates && list.length === 0 && (
+                    {candidates && list.length === 0 && withoutKey.length === 0 && (
                         <div className={cl("hint")}>No contacts{query ? " match" : " yet"}. Add someone's key from their profile menu or when they share it in chat.</div>
                     )}
+                    {withoutKey.map(id => (
+                        <div key={id} className={cl("list-row")}>
+                            <Checkbox checked onChange={() => toggle(id, false)}>
+                                <span className={cl("name")}>{userName(id)}</span>
+                            </Checkbox>
+                            <Badge tone="bad" title="This reader's key isn't saved anymore, so messages can't be encrypted to them. Add their key again or remove them.">no key saved</Badge>
+                            <Button size="min" variant="secondary" onClick={() => openContactDialog(id)}>Add key</Button>
+                            <Button size="min" variant="secondary" onClick={() => toggle(id, false)}>Remove</Button>
+                        </div>
+                    ))}
                     {list.map(c => (
                         <div key={c.userId} className={cl("list-row")}>
                             <Checkbox checked={selected.includes(c.userId)} disabled={!selected.includes(c.userId) && atCap} onChange={v => toggle(c.userId, v)}>
