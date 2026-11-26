@@ -1,0 +1,104 @@
+/* Cipher: colours come from Discord's theme variables, with fallbacks for renamed ones. */
+
+.vc-cipher-stack { display: flex; flex-direction: column; gap: 10px; }
+.vc-cipher-stack-tight { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin-top: 6px; }
+.vc-cipher-row { display: flex; align-items: center; gap: 8px; }
+.vc-cipher-row-between { justify-content: space-between; }
+.vc-cipher-wrap { flex-wrap: wrap; }
+.vc-cipher-h { margin: 8px 0 0; font-size: 16px; font-weight: 600; color: var(--header-primary, var(--text-default)); }
+.vc-cipher-label { font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--header-secondary, var(--text-muted)); }
+.vc-cipher-hint { font-size: 13px; color: var(--text-muted); }
+.vc-cipher-loud { font-weight: 700; font-size: 15px; color: var(--status-danger, #f23f43); }
+.vc-cipher-name { font-weight: 500; color: var(--text-default, var(--text-normal)); }
+.vc-cipher-notes { margin: 0; padding-left: 18px; color: var(--text-muted); font-size: 13px; line-height: 1.5; list-style: disc; }
+.vc-cipher-link { color: var(--text-link) !important; padding: 0 4px !important; }
+.vc-cipher-manager { color: var(--text-default, var(--text-normal)); }
+
+.vc-cipher-input,
+.vc-cipher-textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
+    background: var(--input-background, var(--background-secondary-alt, #1e1f22));
+    color: var(--text-default, var(--text-normal));
+    font-size: 14px;
+    outline: none;
+}
+
+.vc-cipher-textarea { font-family: var(--font-code, monospace); font-size: 12px; resize: vertical; }
+.vc-cipher-input:focus, .vc-cipher-textarea:focus { border-color: var(--brand-500, #5865f2); }
+
+.vc-cipher-check { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-default, var(--text-normal)); }
+.vc-cipher-check input { width: 16px; height: 16px; accent-color: var(--brand-500, #5865f2); }
+.vc-cipher-check-disabled { cursor: default; opacity: .75; }
+
+.vc-cipher-card {
+    display: flex; flex-direction: column; gap: 8px;
+    padding: 12px; border-radius: 8px;
+    background: var(--background-secondary, var(--background-base-lower));
+    border: 1px solid var(--border-subtle, transparent);
+}
+.vc-cipher-card-danger { border: 2px solid var(--status-danger, #f23f43); }
+
+.vc-cipher-list { display: flex; flex-direction: column; gap: 4px; max-height: 280px; overflow-y: auto; }
+.vc-cipher-list-row { display: flex; align-items: center; gap: 6px; padding: 4px 6px; border-radius: 4px; flex-wrap: wrap; }
+.vc-cipher-list-row:hover { background: var(--background-modifier-hover); }
+.vc-cipher-self-row { background: var(--background-modifier-selected, rgba(78 80 88 / 30%)); }
+
+.vc-cipher-badge {
+    display: inline-block; padding: 1px 6px; border-radius: 4px;
+    font-size: 11px; font-weight: 600; line-height: 16px; white-space: nowrap;
+}
+.vc-cipher-badge-good { background: color-mix(in srgb, var(--status-positive, #23a55a) 22%, transparent); color: var(--status-positive, #23a55a); }
+.vc-cipher-badge-warn { background: color-mix(in srgb, var(--status-warning, #f0b232) 22%, transparent); color: var(--status-warning, #f0b232); }
+.vc-cipher-badge-bad { background: var(--status-danger, #f23f43); color: #fff; }
+.vc-cipher-badge-info { background: color-mix(in srgb, var(--brand-500, #5865f2) 25%, transparent); color: var(--text-default, var(--text-normal)); }
+.vc-cipher-badge-muted { background: var(--background-modifier-accent, rgba(78 80 88 / 48%)); color: var(--text-muted); }
+
+.vc-cipher-notice { padding: 8px 10px; border-radius: 6px; font-size: 13px; line-height: 1.4; color: var(--text-default, var(--text-normal)); border-left: 4px solid; }
+.vc-cipher-notice-good { border-color: var(--status-positive, #23a55a); background: color-mix(in srgb, var(--status-positive, #23a55a) 10%, transparent); }
+.vc-cipher-notice-warn { border-color: var(--status-warning, #f0b232); background: color-mix(in srgb, var(--status-warning, #f0b232) 10%, transparent); }
+.vc-cipher-notice-bad { border-color: var(--status-danger, #f23f43); background: color-mix(in srgb, var(--status-danger, #f23f43) 12%, transparent); }
+.vc-cipher-notice-info { border-color: var(--brand-500, #5865f2); background: color-mix(in srgb, var(--brand-500, #5865f2) 10%, transparent); }
+.vc-cipher-notice-muted { border-color: var(--background-modifier-accent, #4e5058); background: var(--background-secondary, transparent); }
+
+.vc-cipher-fp { font-size: 12px; color: var(--text-default, var(--text-normal)); display: flex; flex-direction: column; gap: 2px; }
+.vc-cipher-fp code { font-family: var(--font-code, monospace); word-break: break-all; }
+.vc-cipher-fp-label { display: inline-block; min-width: 76px; color: var(--text-muted); }
+.vc-cipher-code { font-family: var(--font-code, monospace); font-size: 13px; font-weight: 700; letter-spacing: .5px; }
+
+/* message accessory */
+.vc-cipher-accessory {
+    display: flex; gap: 8px; margin-top: 4px; padding: 8px 10px;
+    border-radius: 6px; border-left: 3px solid;
+    background: var(--background-secondary, rgba(0 0 0 / 10%));
+    color: var(--text-default, var(--text-normal));
+    font-size: 14px; max-width: 720px;
+}
+/* Decrypted message: a green box with a green lock, in place of the ciphertext. */
+.vc-cipher-accessory-good {
+    border-color: var(--status-positive, #23a55a);
+    background: color-mix(in srgb, var(--status-positive, #23a55a) 12%, transparent);
+}
+.vc-cipher-accessory-good .vc-cipher-accessory-icon { color: var(--status-positive, #23a55a); }
+.vc-cipher-accessory-good .vc-cipher-plaintext { color: color-mix(in srgb, var(--status-positive, #23a55a) 30%, var(--text-default, var(--text-normal, #dbdee1))); }
+.vc-cipher-reveal { font-size: 11px !important; min-height: 0 !important; height: auto !important; margin-top: 2px; opacity: .7; }
+.vc-cipher-reveal:hover { opacity: 1; }
+.vc-cipher-accessory-info { border-color: var(--brand-500, #5865f2); }
+.vc-cipher-accessory-warn { border-color: var(--status-warning, #f0b232); }
+.vc-cipher-accessory-bad { border-color: var(--status-danger, #f23f43); }
+.vc-cipher-accessory-muted { border-color: var(--background-modifier-accent, #4e5058); color: var(--text-muted); font-size: 13px; }
+.vc-cipher-accessory-icon { flex: none; margin-top: 2px; color: var(--text-muted); }
+.vc-cipher-accessory-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.vc-cipher-badges { display: flex; flex-wrap: wrap; gap: 4px; }
+.vc-cipher-plaintext { white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; }
+
+/* chat bar */
+.vc-cipher-chatbar { display: inline-flex; align-items: center; gap: 4px; color: var(--interactive-normal); }
+.vc-cipher-chatbar-on { color: var(--status-positive, #23a55a); }
+.vc-cipher-chatbar-warn { color: var(--status-warning, #f0b232); }
+.vc-cipher-chatbar-readers { font-size: 12px; font-weight: 600; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vc-cipher-chatbar-bad { color: var(--status-danger, #f23f43); }
+.vc-cipher-person { background: none; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; width: 100%; }

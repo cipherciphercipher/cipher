@@ -1,0 +1,8 @@
+node_modules/
+.vencord/
+coverage/
+*.log
+
+# Your own deployment settings (database ID, address)
+server/wrangler.deploy.toml
+server/.wrangler/
