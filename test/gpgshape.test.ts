@@ -7,7 +7,8 @@ import { checkPgpPublicKey } from "../server/src/validate";
 import { decryptArmored } from "../src/core/compose";
 import { inspectKey } from "../src/core/keys";
 import { pgpDecrypt, pgpEncrypt } from "../src/core/pgpCipher";
-import { checkInnerShape, checkMessageShape, checkPublicKeyShape, dearmorPgp } from "../src/core/pgpPackets";
+import { checkInnerShape, checkMessageShape, checkPublicKeyShape, checkSecretKeyShape, dearmorPgp } from "../src/core/pgpPackets";
+import { isPublicHostname } from "../src/core/serverApi";
 import { encodePayload } from "../src/core/payload";
 import { newGpgHome, pgpUser, rawGpg, type TestUser } from "./helpers";
 
@@ -87,6 +88,26 @@ describe("messages are checked in JavaScript before GnuPG decrypts them", () => 
         expect(() => checkInnerShape(Uint8Array.from([0xA3, 1, 0x78, 0x9C]))).toThrow("compressed");
         for (const bad of [[...lit, ...lit], [...sig, ...sig, ...lit], [...ops, ...lit], sig, [...ops, ...lit, ...sig, ...sig]])
             expect(() => checkInnerShape(Uint8Array.from(bad)), JSON.stringify(bad)).toThrow();
+    });
+});
+
+describe("secret key imports and message links", () => {
+    it("imports only plain secret key files", async () => {
+        const src = newGpgHome();
+        const fpr = await src.engine.generateKey("export (test)");
+        const secret = rawGpg(src.home, ["--armor", "--export-secret-keys", fpr]).stdout.toString();
+        expect(() => checkSecretKeyShape(dearmorPgp(secret))).not.toThrow();
+        const withPhoto = armorAs(src.home, Buffer.concat([dearmorPgp(secret), Buffer.from([0xD1, 6, 5, 1, 0x10, 0, 1, 0xFF])]), "MESSAGE")
+            .replace(/MESSAGE/g, "PRIVATE KEY BLOCK");
+        const dst = newGpgHome();
+        await expect(dst.engine.importSecretKey(withPhoto)).rejects.toMatchObject({ code: "invalid-key" });
+        expect(await dst.engine.importSecretKey(secret)).toEqual([fpr]);
+    }, 60_000);
+
+    it("never loads other people's messages from local network or IP addresses", () => {
+        for (const ok of ["cipher.example.com", "cipher-server.foo.workers.dev"]) expect(isPublicHostname(ok), ok).toBe(true);
+        for (const bad of ["localhost", "router", "192.168.1.1", "10.0.0.1", "127.0.0.1", "0x7f000001", "[::1]", "nas.local", "printer.lan", "x.internal", "a.home", "1.2.3.4.", "foo.localhost"])
+            expect(isPublicHostname(bad), bad).toBe(false);
     });
 });
 

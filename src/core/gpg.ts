@@ -47,7 +47,7 @@ import { dirname, join } from "node:path";
 
 import { isProofStatementFor } from "./keyProof";
 import { type GpgKey, type KeyProtection, type PgpAvailability, type PgpDecryptResult, type PgpEngine, PgpEngineError, type SignatureStatus } from "./pgpEngine";
-import { checkInnerShape, checkMessageShape, checkPublicKeyShape, readSessionKeys } from "./pgpPackets";
+import { checkInnerShape, checkMessageShape, checkPublicKeyShape, checkSecretKeyShape, readSessionKeys } from "./pgpPackets";
 
 export interface GpgPaths {
     gpg: string;
@@ -380,7 +380,13 @@ export class GpgEngine implements PgpEngine {
 
     async importSecretKey(armored: string): Promise<string[]> {
         if (!armored.includes("BEGIN PGP PRIVATE KEY BLOCK")) throw new PgpEngineError("invalid-input");
-        const r = await this.gpg([...this.secretArgs(), "--import"], { input: armored, timeoutMs: PINENTRY_TIMEOUT });
+        try {
+            checkSecretKeyShape(dearmor(armored));
+        } catch {
+            throw new PgpEngineError("invalid-key");
+        }
+        // import-minimal: keep only what the key needs, nothing a crafted file could add.
+        const r = await this.gpg([...this.secretArgs(), "--import-options", "import-minimal", "--import"], { input: armored, timeoutMs: PINENTRY_TIMEOUT });
         if (cancelled(r.status)) throw new PgpEngineError("cancelled");
         const fprs = [...new Set(r.status.filter(s => s[0] === "IMPORT_OK" && s[2]).map(s => s[2].toUpperCase()))];
         if (!fprs.length) throw new PgpEngineError("invalid-key");

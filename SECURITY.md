@@ -206,7 +206,14 @@ Anything in a channel you're viewing is read automatically, so Cipher keeps that
   session-key packets, are refused before any key is tried.
 - PGP messages with any passphrase packet are refused before GnuPG decrypts them (see below).
 - Disappearing messages are only downloaded automatically from *your* Cipher server. A link to
-  any other server needs a click, because loading it tells that server your IP address.
+  any other server needs a click, because loading it tells that server your IP address, and
+  is refused outright if it points at an IP address, localhost or a local-network name, so a
+  message can't make Cipher send requests to your router or other devices.
+- Discord's main process only talks to https servers; plain http (localhost, for developing a
+  server) needs the `CIPHER_DEV_HTTP=1` environment variable, so nothing in the page can use it
+  to reach services on your computer.
+- Importing a PGP secret key into GnuPG needs a click in a native window (like exporting one),
+  and the file must be a plain secret key (no photo IDs) before GnuPG reads it.
 - Decrypted text is rendered by Discord's own message formatter, without images or embeds.
 - Every PGP key and message is checked by Cipher's JavaScript before GnuPG sees it, and only
   the exact shapes Cipher makes get through (`src/core/pgpPackets.ts`): a key is one primary

@@ -25,6 +25,9 @@ All notable changes to Cipher are listed here. The format follows
   extra packets, data after the encrypted packet and compressed data inside are refused.
   Plain-gpg messages need `--compress-algo none`.
 - GnuPG now runs with `--no-options`, so `gpg.conf` can't change Cipher's calls.
+- Importing a secret key needs a native confirmation and a plain key file; other people's
+  disappearing-message links to IP addresses or local-network names are refused; plain-http
+  servers need `CIPHER_DEV_HTTP=1`.
 - Server responses carry stricter headers (sandboxed CSP, no framing, same-origin only).
 - Cipher server: Discord sign-in tokens are revoked as soon as the user ID is read, sign-in
   attempts are capped per IP, malformed age keys get a clean refusal, RSA keys with a weak

@@ -55,6 +55,20 @@ export function serverRequestUrl(base: string, method: string, path: string): st
     return origin + path;
 }
 
+/**
+ * Whether a host name looks like a public internet server. Links to other
+ * people's servers are only loaded from such hosts, so a message posted in
+ * chat can't make Cipher send requests to your router or other devices on
+ * your network (IP addresses, localhost, single-label and local-only names).
+ */
+export function isPublicHostname(hostname: string): boolean {
+    const h = hostname.toLowerCase().replace(/\.$/, "");
+    if (!h.includes(".") || h.startsWith("[")) return false;
+    if (/^[\d.]+$/.test(h) || /^0x/i.test(h)) return false;
+    if (/\.(?:localhost|local|lan|home|internal|intranet|corp|private|arpa|test|invalid|example)$/.test(h)) return false;
+    return /^[a-z0-9-]+(?:\.[a-z0-9-]+)+$/.test(h);
+}
+
 /** Where a link in a Discord message points, if it's a Cipher message link. */
 export function parseLinkUrl(url: string): { origin: string; id: string; } | null {
     let u: URL;

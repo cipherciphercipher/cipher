@@ -23,7 +23,7 @@ import { CipherError } from "./core/errors";
 import { parseTicket, proofStatement, readAgeChallenge } from "./core/keyProof";
 import { inspectKey, type KeyType } from "./core/keys";
 import { pgpEngine, toCipherError } from "./core/pgpCipher";
-import { LINK_ID_RE, type LinkTtl, normalizeServerUrl, SERVER_TOKEN_RE } from "./core/serverApi";
+import { DELETE_TOKEN_RE, isPublicHostname, LINK_ID_RE, type LinkTtl, normalizeServerUrl, SERVER_TOKEN_RE } from "./core/serverApi";
 import { settings } from "./settings";
 import { state } from "./state";
 
@@ -165,7 +165,7 @@ function readDirectoryKey(k: any): DirectoryKey | null {
     if (typeof k.fingerprint !== "string" || !/^(?:[0-9A-F]{40}|[0-9A-F]{64})$/.test(k.fingerprint)) return null;
     const p = k.pending;
     const pending = p && typeof p === "object" && num(p.effectiveAt) !== undefined
-        ? { removal: p.removal === true, fingerprint: typeof p.fingerprint === "string" ? p.fingerprint : null, effectiveAt: num(p.effectiveAt)! }
+        ? { removal: p.removal === true, fingerprint: typeof p.fingerprint === "string" && /^(?:[0-9A-F]{40}|[0-9A-F]{64})$/.test(p.fingerprint) ? p.fingerprint : null, effectiveAt: num(p.effectiveAt)! }
         : undefined;
     return {
         type: k.type, key: k.key, fingerprint: k.fingerprint, updatedAt: num(k.updatedAt) ?? 0,
@@ -333,7 +333,8 @@ export async function uploadMessage(armored: string, ttlDays: LinkTtl): Promise<
     const r = await call("POST", "/v1/messages", { token: s.token, body: { ciphertext: normalizeForServer(armored), ttlDays } });
     if (r.status !== 201) throw serverError(r.status, r.body);
     const body = parseJson<{ id?: unknown; deleteToken?: unknown; expiresAt?: unknown; }>(r.body);
-    if (typeof body.id !== "string" || !LINK_ID_RE.test(body.id) || typeof body.deleteToken !== "string" || typeof body.expiresAt !== "number")
+    if (typeof body.id !== "string" || !LINK_ID_RE.test(body.id) || typeof body.deleteToken !== "string" || !DELETE_TOKEN_RE.test(body.deleteToken) ||
+        typeof body.expiresAt !== "number" || !Number.isFinite(body.expiresAt))
         throw new CipherError("internal", "The Cipher server sent something unexpected.");
     const now = Date.now();
     await DataStore.update<Record<string, StoredLink>>(linksKey(), (all = {}) => {
@@ -347,6 +348,9 @@ export async function uploadMessage(armored: string, ttlDays: LinkTtl): Promise<
 /** Downloads a message and checks it's exactly the ciphertext the sender linked to. */
 export async function fetchMessage(origin: string, id: string, hash: string): Promise<{ armored: string; } | { gone: true; }> {
     if (!LINK_ID_RE.test(id)) throw new CipherError("malformed");
+    // Your own server can be anywhere; anyone else's must be a public host name.
+    if (origin !== serverOrigin() && !isPublicHostname(new URL(origin).hostname))
+        throw new CipherError("internal", "Cipher doesn't load messages from local network or IP addresses unless it's your own server.");
     const r = await native().serverFetch(origin, "GET", `/m/${id}`, undefined, undefined, undefined);
     if (!r.ok) throw new CipherError("internal", "Couldn't reach the server holding this message.");
     if (r.status === 404) return { gone: true };

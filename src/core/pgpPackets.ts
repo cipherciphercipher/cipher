@@ -236,6 +236,25 @@ export function checkPublicKeyShape(data: Uint8Array): void {
 }
 
 /**
+ * A secret key file as Cipher imports it: secret keys (5) each followed by
+ * secret subkeys (7), user IDs (13) and signatures (2). No photo IDs, no
+ * partial lengths, at most 16 keys.
+ */
+export function checkSecretKeyShape(data: Uint8Array): void {
+    if (data.length === 0 || data.length > 256 * 1024) throw new PacketError("key size");
+    const ps = packets(data, 4096);
+    if (ps[0].tag !== 5) throw new PacketError("doesn't start with a secret key");
+    let keys = 0;
+    for (const p of ps) {
+        if (p.partial) throw new PacketError("partial length in a key");
+        if (p.tag === 17) throw new PacketError("photo ID");
+        if (![2, 5, 7, 13].includes(p.tag)) throw new PacketError(`packet type ${p.tag} in a key`);
+        if (p.tag === 5 && ++keys > 16) throw new PacketError("too many keys");
+        if (p.tag === 13 && p.end - p.bodyStart > 2048) throw new PacketError("user ID too long");
+    }
+}
+
+/**
  * An encrypted message as Cipher accepts it: public-key session-key packets
  * (and markers), then exactly one SEIPD (18) or OCB-encrypted (20) packet
  * reaching the end. No passphrase packets, nothing after the data.

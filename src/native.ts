@@ -108,7 +108,15 @@ export function generateKey(event: IpcMainInvokeEvent, userId: unknown) {
 }
 
 export function importSecretKey(event: IpcMainInvokeEvent, armored: unknown) {
-    return run(event, () => check(isStr(armored, 256 * 1024) && (armored as string).includes("-----BEGIN PGP PRIVATE KEY BLOCK-----")), g => g.importSecretKey(armored as string));
+    return run(event, () => check(isStr(armored, 256 * 1024) && (armored as string).includes("-----BEGIN PGP PRIVATE KEY BLOCK-----")), async g => {
+        // Adding a key to the user's GnuPG keyring needs a click the page can't fake.
+        const ok = await confirmNative(event,
+            "Import a PGP secret key into GnuPG?",
+            "Something in Discord asked to add a secret key to your GnuPG keyring.\n\nOnly allow this if you just chose Import in Cipher's settings.",
+            "Import");
+        if (!ok) throw new PgpEngineError("cancelled");
+        return g.importSecretKey(armored as string);
+    });
 }
 
 /** Asks in a native window. Any code in the Discord page could call these IPC handlers, so the page can't be the one to confirm. */
@@ -200,6 +208,9 @@ export async function serverFetch(event: IpcMainInvokeEvent, base: unknown, meth
     if (typeof base !== "string" || typeof method !== "string" || typeof path !== "string") return { ok: false, code: "invalid-input" };
     const url = serverRequestUrl(base, method, path);
     if (!url) return { ok: false, code: "invalid-input" };
+    // Plain http (localhost only) is for developing a server. Off unless asked for, so
+    // nothing in the page can use Discord's main process to reach services on this PC.
+    if (!url.startsWith("https://") && process.env.CIPHER_DEV_HTTP !== "1") return { ok: false, code: "invalid-input" };
     if (body !== undefined && body !== null && !(typeof body === "string" && body.length <= MAX_SERVER_BODY)) return { ok: false, code: "invalid-input" };
     if (token !== undefined && token !== null && !(typeof token === "string" && SERVER_TOKEN_RE.test(token))) return { ok: false, code: "invalid-input" };
     if (deleteToken !== undefined && deleteToken !== null && !(typeof deleteToken === "string" && DELETE_TOKEN_RE.test(deleteToken))) return { ok: false, code: "invalid-input" };
